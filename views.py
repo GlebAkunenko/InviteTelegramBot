@@ -9,22 +9,23 @@ status_symbol = {
     Status.lite_res: '🟡',
     Status.hard_res: '🟠',
     Status.work: '🔴',
-    Status.broken: '⚫️'
+    Status.broken: '⚫️',
+    Status.your: '🔵',
 }
 
 computer_reservation = ComputerReservation(Club.get(id=1))
 
-def _get_computer_info(computer: Computer) -> str:
+def _get_computer_info(computer: Computer, sender: User) -> str:
     if computer.num > 9:
         number = f"№{html.code(computer.num)}"
     else:
         number = f"№{html.code(f'0{computer.num}')}"
-    reservations = computer_reservation.reservations[computer.id]
-    status = status_symbol[get_computer_status(computer, reservations)]
+    reservations: list[Reservation] = computer_reservation.reservations[computer.id]
+    status = status_symbol[get_computer_status(computer, reservations, sender)]
     return f"{number} {status}"
 
 
-def _get_room_info(room: Room):
+def _get_room_info(room: Room, sender: User):
     computers = [c for c in room.computers]
     columns = {}
     for computer in computers:
@@ -41,13 +42,13 @@ def _get_room_info(room: Room):
                 row.append(columns[c][i])
         rows.append(row)
     for row in rows:
-        result += "   ".join([_get_computer_info(comp) for comp in row]) + "\n"
+        result += "   ".join([_get_computer_info(comp, sender) for comp in row]) + "\n"
     return result
 
 
-def get_club_info(club: Club) -> str:
+def get_club_info(club: Club, sender: User) -> str:
     rooms = Room.select().where(Room.club == club)
-    return "\n".join([_get_room_info(room) for room in rooms])
+    return "\n".join([_get_room_info(room, sender) for room in rooms])
 
 
 def confirm_reservation(request: Reservation) -> str:

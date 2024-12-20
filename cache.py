@@ -1,6 +1,6 @@
 import datetime as dt
 
-from models import Computer, Reservation, Club, Room
+from models import Computer, Reservation, Club, Room, User
 from rules import Status, get_computer_status
 
 class ComputerReservation:
@@ -18,9 +18,15 @@ class ComputerReservation:
                 (Room.club == self.club)
             ))
         self.__reservations: dict[int, list[Reservation]] = {}
+        self.__reservation: dict[int, User | None] = {}
         self.__free_computers: list[Computer] = []
         for computer in self.__computers:
             self.__reservations[computer.id] = [r for r in self.__all_reservations if r.computer == computer]
+            self.__reservations[computer.id].sort(key=lambda r: r.start)
+            if len(self.__reservations[computer.id]) > 0:
+                self.__reservation[computer.id] = self.__reservations[computer.id][0].user
+            else:
+                self.__reservation[computer.id] = None
             if get_computer_status(computer, self.__reservations[computer.id]) == Status.free:
                 self.__free_computers.append(computer)
 
@@ -41,6 +47,10 @@ class ComputerReservation:
         self.__free_computers: list[Computer] = []
         for computer in self.__computers:
             self.__reservations[computer.id] = [r for r in self.__all_reservations if r.computer == computer]
+            if len(self.__reservations[computer.id]) > 0:
+                self.__reservation[computer.id] = self.__reservations[computer.id][0].user
+            else:
+                self.__reservation[computer.id] = None
             if get_computer_status(computer, self.__reservations[computer.id]) == Status.free:
                 self.__free_computers.append(computer)
 
@@ -67,3 +77,8 @@ class ComputerReservation:
     def free_computers(self) -> list[Computer]:
         self.try_to_update()
         return self.__free_computers
+
+    @property
+    def reservation(self) -> dict[int, User | None]:
+        self.try_to_update()
+        return self.__reservation

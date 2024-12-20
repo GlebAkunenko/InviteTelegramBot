@@ -1,6 +1,6 @@
 import datetime as dt
 from enum import Enum
-from models import Computer, Reservation, Club
+from models import Computer, Reservation, Club, User
 
 
 class Status(Enum):
@@ -9,9 +9,10 @@ class Status(Enum):
     lite_res = 'lite_res' # the reservation is after 3+ hours
     hard_res = 'hard_res' # the reservation is soon
     broken = 'broken'
+    your = 'your'
 
 
-def get_computer_status(computer: Computer, reservations: list[Reservation]) -> Status:
+def get_computer_status(computer: Computer, reservations: list[Reservation], user: User | None = None) -> Status:
     if computer.is_broken:
         return Status.broken
     elif computer.is_work:
@@ -20,11 +21,14 @@ def get_computer_status(computer: Computer, reservations: list[Reservation]) -> 
         return Status.free
     else:
         now = dt.datetime.now()
-        times = [(r.start - now).seconds / 60 / 60 for r in reservations]
-        next_reservation = min(times)
-        if next_reservation > 7:
+        reservations.sort(key=lambda r: r.start)
+        next_reservation = reservations[0]
+        if user is not None and next_reservation.user == user:
+            return Status.your
+        time = (next_reservation.start - now).total_seconds() / 60 / 60
+        if time > 7:
             return Status.free
-        elif next_reservation > 3:
+        elif time > 3:
             return Status.lite_res
         else:
             return Status.hard_res

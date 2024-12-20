@@ -2,7 +2,7 @@ from aiogram import Bot, Router, types, html, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import CallbackQuery, ReplyKeyboardRemove, user
 
 from bot import bot
 
@@ -25,36 +25,67 @@ class ReservationStates(StatesGroup):
 def can_make_reservation(text: str) -> bool:
     return text.count(views.status_symbol[Status.free]) > 0
 
+def has_reservation(user: User) -> bool:
+    return user in computer_reservation.reservation.values()
+
 @router.message(Command("now"))
 @router.message(F.text.casefold() == 'Сейчас')
 async def get_club_info(message: types.Message):
     club = Club.get(id=1)
     telegram_id = message.from_user.id
-    text = views.get_club_info(club)
-    await bot.send_message(telegram_id, text, reply_markup=keyboards.club_info(can_make_reservation(text)))
+    user = User.get(telegram_id=telegram_id)
+    text = views.get_club_info(club, user)
+    if has_reservation(user):
+        await bot.send_message(telegram_id, text, reply_markup=keyboards.cancel_reservation())
+    else:
+        await bot.send_message(telegram_id, text, reply_markup=keyboards.club_info(can_make_reservation(text)))
 
 
 @router.callback_query(keyboards.InfoCallback.filter(F.command == "upd"))
 async def update_club_info(query: CallbackQuery):
     club = Club.get(id=1)
-    new_text = views.get_club_info(club)
+    user = User.get(telegram_id=query.from_user.id)
+    new_text = views.get_club_info(club, user)
 
     chat_id = query.message.chat.id
     message_id = query.message.message_id
     await bot.edit_message_text(new_text, chat_id=chat_id, message_id=message_id)
-    await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=keyboards.club_info(can_make_reservation(new_text)))
+    if has_reservation(user):
+        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=keyboards.cancel_reservation())
+    else:
+        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=keyboards.club_info(can_make_reservation(new_text)))
     await query.answer()
+
+
+@router.callback_query(keyboards.InfoCallback.filter(F.command == "unbook"))
+async def unbook(query: CallbackQuery):
+    telegram_id = query.from_user.id
+    user = User.get(telegram_id=telegram_id)
+    arr = [
+        reservation
+        for reservation in computer_reservation.all_reservations
+        if reservation.user == user
+    ]
+    if len(arr) == 0:
+        await query.answer("Уже неактуально")
+    else:
+        Reservation.delete().where(Reservation.user == user).execute()
+        await update_club_info(query)
 
 
 @router.callback_query(keyboards.InfoCallback.filter(F.command == "res"))
 async def choose_room(query: CallbackQuery):
     telegram_id = query.from_user.id
+    user = User.get(telegram_id=telegram_id)
     free_computers = computer_reservation.free_computers
     rooms = {c.room for c in free_computers}
     rooms = list(rooms)
     rooms.sort(key=lambda r: r.id)
     if len(rooms) == 0:
         await query.answer("К сожалению свободных мест не осталось")
+        return
+    if has_reservation(user):
+        await query.answer("Вы уже забронировали 1 компьютер")
         return
     await bot.send_message(
         telegram_id,
@@ -143,6 +174,8 @@ async def book_computer(message: types.Message, state: FSMContext):
         time = dt.time(h, m)
         now = dt.datetime.now()
         date = dt.datetime(now.year, now.month, now.day, time.hour, time.minute)
+        if time < now.time():
+            date += dt.timedelta(days=1)
         room, computer = cache[telegram_id]
         user = User.get(telegram_id=message.from_user.id)
         request = Reservation(
