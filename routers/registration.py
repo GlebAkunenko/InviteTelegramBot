@@ -10,6 +10,7 @@ from bot import bot
 from keyboards import confirm, InfoCallback
 
 from models import User
+from routers.help import command_help_handler
 
 router = Router()
 
@@ -38,6 +39,7 @@ async def confirm_name(message: types.Message, state: FSMContext):
         user.save()
         await state.set_state(None)
         await bot.send_message(telegram_id, "Подтверждено", reply_markup=ReplyKeyboardRemove())
+        await command_help_handler(message)
     elif text == "нет":
         await bot.send_message(telegram_id, "Напиши ещё раз имя", reply_markup=ReplyKeyboardRemove())
         await state.set_state(RegistrationStates.wait_name)
@@ -49,17 +51,13 @@ async def confirm_name(message: types.Message, state: FSMContext):
 async def skip_empty_button(query: types.CallbackQuery):
     await query.answer()
 
-# @router.callback_query(ConfirmCallbackData.filter(F.command == 'reg1'))
-# async def handle_button_click(query: CallbackQuery, state: FSMContext):
-#     data = ConfirmCallbackData.unpack(query.data)
-#     if data.body == 'yes':
-#         user = User.get(User.telegram_id == query.from_user.id)
-#         user.nickname = cache[query.from_user.id]
-#         del cache[query.from_user.id]
-#         user.save()
-#         await state.set_state(None)
-#         await bot.send_message(query.from_user.id, "Подтверждено")
-#     elif data.body == 'no':
-#         await bot.send_message(query.from_user.id, "Напиши ещё раз имя")
-#         await state.set_state(RegistrationStates.wait_name)
-#     await bot.delete_message(query.from_user.id, query.message.message_id)
+@router.callback_query(keyboards.InfoCallback.filter(F.command == 'canc ren'))
+async def cancel_rename(query: types.CallbackQuery, state: FSMContext):
+    telegram_id = query.from_user.id
+    await state.set_state(None)
+    await bot.send_message(
+        telegram_id,
+        "Окей. Оставим как есть"
+    )
+    await query.answer()
+

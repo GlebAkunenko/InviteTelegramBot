@@ -1,8 +1,9 @@
-import datetime as dt
+import commands
 from aiogram import html
 from models import *
 from rules import get_computer_status, Status
 from cache import ComputerReservation, Status
+
 
 status_symbol = {
     Status.free: '🟢',
@@ -56,3 +57,22 @@ def confirm_reservation(request: Reservation) -> str:
             f"в {request.computer.room.name}\n"
             f"на {request.start.strftime("%d.%m.%Y %H:%M")}\n"
             f"Верно?")
+
+def menu() -> str:
+    return f"""
+В этом боте ты можешь в любой момент узнать {html.code('/свободные места')} в компьютерном клубе {html.code('/invite')}
+Если ты написал кринжовое имя, то возможно тебе понадобится {html.code('/смена имени')}
+Запутался? Тогда тебе поможет {html.code('/справка')}
+"""
+
+def club_info_help() -> str:
+    return f"""
+{html.code('/справка')}
+
+🟢 - {html.code('ПК свободен')}
+🟡 - {html.code('ПК забронирован (более чем через 3 часа)')}
+🟠 - {html.code('ПК забронирован (менее чем через 3 часа)')}
+🔴 - {html.code('ПК занять')}
+⚫️ - {html.code('ПК недоступен')}
+🔵 - {html.code('ПК забронирован вами')}
+"""

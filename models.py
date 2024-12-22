@@ -26,6 +26,7 @@ class User(Model):
     telegram_id = IntegerField(unique=True)  # chat_id для Telegram
     nickname = CharField(null=True)  # Никнейм пользователя
     role = IntegerField(default=0)
+    disable_help = BooleanField(default=False)
 
     def is_admin(self):
         return self.role == 1

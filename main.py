@@ -3,17 +3,20 @@ import logging
 import sys
 
 from aiogram import Dispatcher, html
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from models import *
 from bot import bot
-from routers import RegistrationStates, registration, reservation
+from routers import *
 
 dp = Dispatcher()
 dp.include_router(registration)
 dp.include_router(reservation)
+dp.include_router(account)
+dp.include_router(help)
+dp.include_router(secrets)
 
 @dp.message(CommandStart())
 async def command_start_handler(message: Message, state: FSMContext) -> None:
@@ -23,7 +26,6 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
         await bot.send_message(user.telegram_id, f"Это бот компьютерного клуба {html.code('/invite')}. Напиши своё имя чтобы, я тебя узнавал")
         await state.set_state(RegistrationStates.wait_name)
         user.save()
-
 
 async def main() -> None:
     await dp.start_polling(bot)

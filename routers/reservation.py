@@ -1,14 +1,13 @@
-from aiogram import Bot, Router, types, html, F
-from aiogram.filters import Command
+from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, ReplyKeyboardRemove, user
+from aiogram.types import CallbackQuery, ReplyKeyboardRemove
 
 from bot import bot
 
 from models import *
 from cache import ComputerReservation
-import views, keyboards
+import views, keyboards, commands
 import re
 
 from rules import Status
@@ -28,12 +27,14 @@ def can_make_reservation(text: str) -> bool:
 def has_reservation(user: User) -> bool:
     return user in computer_reservation.reservation.values()
 
-@router.message(Command("now"))
-@router.message(F.text.casefold() == 'Сейчас')
+@router.message(commands.club_info.command)
+@router.message(F.text.casefold() == commands.club_info.text_equivalent.casefold())
 async def get_club_info(message: types.Message):
     club = Club.get(id=1)
     telegram_id = message.from_user.id
-    user = User.get(telegram_id=telegram_id)
+    user: User = User.get(telegram_id=telegram_id)
+    if not user.disable_help:
+        await bot.send_message(telegram_id, views.club_info_help(), reply_markup=keyboards.block_help())
     text = views.get_club_info(club, user)
     if has_reservation(user):
         await bot.send_message(telegram_id, text, reply_markup=keyboards.cancel_reservation())
@@ -135,7 +136,7 @@ async def choose_time(query: CallbackQuery, state: FSMContext):
     await bot.edit_message_reply_markup(
         chat_id=chat_id,
         message_id=message_id,
-        reply_markup=keyboards.cancel()
+        reply_markup=keyboards.cancel_reservation()
     )
     await state.set_state(ReservationStates.wait_time)
     await query.answer()
@@ -162,7 +163,7 @@ async def choose_time(query: CallbackQuery):
 async def book_computer(message: types.Message, state: FSMContext):
     telegram_id = message.from_user.id
     text = message.text
-    if re.match("[0-9]{2}:[0-9]{2}", text):
+    if re.match("[0-9]{1,2}:[0-9]{2}", text):
         h, m = map(int, text.split(":"))
     elif re.match("^[0-9]{1,2}$", text):
         h = int(text)
@@ -218,11 +219,11 @@ async def confirm_name(message: types.Message, state: FSMContext):
     else:
         await bot.send_message(telegram_id, "Напиши да/нет")
 
-# @router.callback_query(keyboards.ReservationCallback.filter(F.state == 'comp'))
-# async def book_computer(query: CallbackQuery):
-#     id = keyboards.ReservationCallback.unpack(query.data).data
-#     computer = Computer.get(id=id)
-#     Reservation.create(
-#         computer=computer,
-#
-#     )
+
+@router.callback_query(keyboards.InfoCallback.filter(F.command == 'block'))
+async def disable_help(query: CallbackQuery):
+    telegram_id = query.from_user.id
+    user: User = User.get(telegram_id=telegram_id)
+    user.disable_help = True
+    user.save()
+    await query.answer("Для включения справки напиши /справка")

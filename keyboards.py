@@ -3,6 +3,7 @@ from sys import prefix
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 
+import commands
 from models import Room, Computer
 
 class InfoCallback(CallbackData, prefix='i'):
@@ -17,7 +18,7 @@ class ReservationCallback(CallbackData, prefix='r'):
 def confirm() -> ReplyKeyboardMarkup:
     button_yes = KeyboardButton(text="Да")
     button_no = KeyboardButton(text="Нет")
-    return ReplyKeyboardMarkup(keyboard=[[button_yes, button_no]])
+    return ReplyKeyboardMarkup(keyboard=[[button_yes, button_no]], resize_keyboard=True, one_time_keyboard=True)
 
 
 def club_info(can_make_reservation = True) -> InlineKeyboardMarkup:
@@ -74,7 +75,7 @@ def computers(computers: list[Computer]) -> InlineKeyboardMarkup:
     ])
 
 
-def cancel() -> InlineKeyboardMarkup:
+def cancel_reservation() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text='Отмена',
@@ -84,4 +85,24 @@ def cancel() -> InlineKeyboardMarkup:
                 comp=None,
                 time=None
             ).pack())],
+    ])
+
+def cancel_rename() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text='Отмена',
+            callback_data=InfoCallback(command='canc ren').pack())],
+    ])
+
+
+def menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(keyboard=[
+        [KeyboardButton(text=commands.club_info.text_equivalent)],
+        [KeyboardButton(text=commands.rename.text_equivalent)],
+    ], resize_keyboard=True)
+
+
+def block_help() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Больше не показывать", callback_data=InfoCallback(command='block').pack())],
     ])
