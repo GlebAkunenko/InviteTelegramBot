@@ -41,7 +41,7 @@ def club_info(can_make_reservation = True) -> InlineKeyboardMarkup:
         ])
 
 
-def cancel_reservation() -> InlineKeyboardMarkup:
+def club_info_reservated() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='Отменить бронь', callback_data=InfoCallback(command='unbook').pack())],
         [InlineKeyboardButton(text='Обновить', callback_data=InfoCallback(command='upd').pack())],

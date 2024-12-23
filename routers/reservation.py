@@ -37,7 +37,7 @@ async def get_club_info(message: types.Message):
         await bot.send_message(telegram_id, views.club_info_help(), reply_markup=keyboards.block_help())
     text = views.get_club_info(club, user)
     if has_reservation(user):
-        await bot.send_message(telegram_id, text, reply_markup=keyboards.cancel_reservation())
+        await bot.send_message(telegram_id, text, reply_markup=keyboards.club_info_reservated())
     else:
         await bot.send_message(telegram_id, text, reply_markup=keyboards.club_info(can_make_reservation(text)))
 
@@ -52,7 +52,7 @@ async def update_club_info(query: CallbackQuery):
     message_id = query.message.message_id
     await bot.edit_message_text(new_text, chat_id=chat_id, message_id=message_id)
     if has_reservation(user):
-        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=keyboards.cancel_reservation())
+        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=keyboards.club_info_reservated())
     else:
         await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=keyboards.club_info(can_make_reservation(new_text)))
     await query.answer()

@@ -22,8 +22,8 @@ async def handle_invite(message: Message):
     )
 
 
-@router.message(Command('/dnk test'))
-async def how_is_an_author(message: Message):
+@router.message(Command('dnktest'))
+async def who_is_an_auther(message: Message):
     await bot.send_message(
         message.from_user.id,
         "Father: 100% @Gleb1000\nMother: ???"
