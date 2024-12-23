@@ -17,6 +17,7 @@ dp.include_router(reservation)
 dp.include_router(account)
 dp.include_router(help)
 dp.include_router(secrets)
+dp.include_router(admin)
 
 @dp.message(CommandStart())
 async def command_start_handler(message: Message, state: FSMContext) -> None:

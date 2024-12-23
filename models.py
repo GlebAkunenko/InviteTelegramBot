@@ -28,9 +28,6 @@ class User(Model):
     role = IntegerField(default=0)
     disable_help = BooleanField(default=False)
 
-    def is_admin(self):
-        return self.role == 1
-
     class Meta:
         database = db  # Указываем базу данных, с которой работаем
 

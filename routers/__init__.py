@@ -4,3 +4,4 @@ from .reservation import router as reservation
 from .account import router as account
 from .help import router as help
 from .secrets import router as secrets
+from .admin import router as admin

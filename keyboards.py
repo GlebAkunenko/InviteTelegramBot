@@ -1,3 +1,4 @@
+from math import ceil
 from sys import prefix
 
 from aiogram.filters.callback_data import CallbackData
@@ -6,14 +7,21 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, InlineKeyboardMar
 import commands
 from models import Room, Computer
 
+
 class InfoCallback(CallbackData, prefix='i'):
     command: str
+
+
+class AdminCallBack(CallbackData, prefix='a'):
+    computer: int
+
 
 class ReservationCallback(CallbackData, prefix='r'):
     state: str
     room: int | None
     comp: int | None
     time: str | None
+
 
 def confirm() -> ReplyKeyboardMarkup:
     button_yes = KeyboardButton(text="Да")
@@ -105,4 +113,25 @@ def menu() -> ReplyKeyboardMarkup:
 def block_help() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Больше не показывать", callback_data=InfoCallback(command='block').pack())],
+    ])
+
+
+def room_status(room: Room) -> InlineKeyboardMarkup:
+    def button(computer: Computer) -> InlineKeyboardButton:
+        status = "🔴" if computer.is_work else "🟢"
+        if computer.is_broken:
+            status = "⚫️"
+        return InlineKeyboardButton(
+            text=f'№{0 if computer.num < 10 else ''}{computer.num} {status}',
+            callback_data=AdminCallBack(computer=computer.id).pack()
+        )
+    computers = Computer.select().where(Computer.room == room)
+    n = len(computers)
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            (button(computers[row * 3 + i]) if row * 3 + i < len(computers)
+             else InlineKeyboardButton(text=" ", callback_data=InfoCallback(command='skip').pack()))
+            for i in range(0, 3)
+        ]
+        for row in range(ceil(n / 3))
     ])
