@@ -8,7 +8,7 @@ import random
 
 router = Router()
 
-@router.message(Command('/invite'))
+@router.message(Command('invite'))
 async def handle_invite(message: Message):
     replicas = [
         "Да да это я",
